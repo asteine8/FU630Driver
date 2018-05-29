@@ -19,8 +19,8 @@ def WriteToDAC(device, channel, data, gain):
     bytesOut[0] |= (channel << 7) | (gain << 5) # select channel and gain
     bytesOut[0] |= (1 << 4) # Don't shutdown the channel
 
-    bytesOut[1] = data & 255 # Use 255 as 8 bit bitmask to get first 8 bits of data
-    bytesOut[0] |= ((data >> 8) & 15) # Use 15 as 4 bit bitmask to get last 4 bits of data
+    bytesOut[1] = int(data) & 255 # Use 255 as 8 bit bitmask to get first 8 bits of data
+    bytesOut[0] |= ((int(data) >> 8) & 15) # Use 15 as 4 bit bitmask to get last 4 bits of data
 
     device.xfer2(bytesOut) # Write Bytes to DAC
     print(bin(bytesOut[1]))

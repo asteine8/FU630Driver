@@ -5,7 +5,7 @@ This package allows one to interface with a FU-630SLD pump laser utilizing the A
 """
 
 import ConversionFunctions as convert
-import Devices
+import Devices.Peripherals
 
 import spidev
 import Adafruit_ADS1x15
@@ -25,13 +25,13 @@ class FU630_Laser:
     TTL_DAC_CHANNEL = 0 # 0 = channel A, 1 = channel B
 
     # ADC Consts
-    ADS1115_ADDRESS = 0x49 # Current I2C Address of the ADS1115 (find using "sudo i2cdetect -y 1")
+    ADS1115_ADDRESS = 0x48 # Current I2C Address of the ADS1115 (find using "sudo i2cdetect -y 1")
     ADC_GAIN = 1 # FSR = +- 4.096V
     NUM_ADC_SAMPLES = 10 # Number of samples to average
 
     TTL_ADC_CHANNEL = 0 # Standard channel (No Differential)
     PHOTODIODE_ADC_CHANNEL = 1 # Standard channel (No Differential)
-    PHOTODIODE_SHUNT_RESISTANCE = 1000 # Should be 1k, value shoud be experimentally determined
+    PHOTODIODE_SHUNT_RESISTANCE = 988 # Should be 1k, value shoud be experimentally determined
 
     peripheral = Devices.Peripherals # Create an object to reference the Peripherals package from
 
