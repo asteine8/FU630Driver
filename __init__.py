@@ -1,1 +1,1 @@
-__all__ = ["Peripherals"] # Only import the peripherals package
+__all__ = ["FU630Laser"] # Only import the peripherals package
