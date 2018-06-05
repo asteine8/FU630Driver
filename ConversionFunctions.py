@@ -26,4 +26,4 @@ def PhotodiodeVoltageToCurrent(voltage, shuntResistance):
 def PhotodiodeVoltageToOpPower(voltage, shuntResistance):
     # Function to convert measured photodiode voltage (volts) to optical power (mW)
     current = PhotodiodeVoltageToCurrent(voltage, shuntResistance)
-    return 116 * current + 0.364
+    return 117 * current + 0.275
