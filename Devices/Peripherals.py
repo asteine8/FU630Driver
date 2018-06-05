@@ -12,15 +12,6 @@ def OpPower(voltage):
     power = voltage 
     return power
 
-def GetTTLVoltage(device, channel, gain, numSamples):
-    # A function to return the average of "numSamples" readings with a set gain
-    runSum = 0
-
-    for i in range(numSamples):  # Average samples
-        runSum += ADS1115.ReadFromADC(device, channel, gain)
-    
-    return ADS1115.ConvertToVoltage(runSum/numSamples, gain)
-
 def GetPhotodiodeVoltage(device, channel, gain, numSamples):
 
     runSum = 0

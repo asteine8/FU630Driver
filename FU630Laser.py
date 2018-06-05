@@ -5,7 +5,7 @@ This package allows one to interface with a FU-630SLD pump laser utilizing the A
 """
 
 import ConversionFunctions as convert
-import Devices.Peripherals
+import Devices
 
 import spidev
 import Adafruit_ADS1x15
@@ -25,13 +25,24 @@ class FU630_Laser:
     TTL_DAC_CHANNEL = 0 # 0 = channel A, 1 = channel B
 
     # ADC Consts
-    ADS1115_ADDRESS = 0x48 # Current I2C Address of the ADS1115 (find using "sudo i2cdetect -y 1")
-    ADC_GAIN = 1 # FSR = +- 4.096V
-    NUM_ADC_SAMPLES = 10 # Number of samples to average
+    ADS1115_ADDRESS = 0x48 # Current I2C Address of the ADS1115 with address pin to NC (find using "sudo i2cdetect -y 1")
 
-    TTL_ADC_CHANNEL = 0 # Standard channel (No Differential)
-    PHOTODIODE_ADC_CHANNEL = 1 # Standard channel (No Differential)
-    PHOTODIODE_SHUNT_RESISTANCE = 988 # Should be 1k, value shoud be experimentally determined
+    # ADC Gain Settings
+    #  1 = +/- 4.096 V
+    #  2 = +/- 2.048 V
+    #  4 = +/- 1.024 V
+    #  8 = +/- 0.512 V
+    # 16 = +/- 0.256 V
+    ADC_GAIN = 4 # FSR = +- 1.024 Volts
+    NUM_ADC_SAMPLES = 10 # Number of samples to average (10 is good enough)
+
+    # ADC Differential Channel Settings (Recommended to use settings 1 - 3 to allow for multiple devices per ADC)
+    # 0 = A0 - A1
+    # 1 = A0 - A3
+    # 2 = A1 - A3
+    # 3 = A2 - A3
+    PHOTODIODE_ADC_CHANNEL = 1 # Standard channel (Differential)
+    PHOTODIODE_SHUNT_RESISTANCE = 978 # Should be ~1k, value shoud be experimentally determined in ohms
 
     peripheral = Devices.Peripherals # Create an object to reference the Peripherals package from
 
@@ -43,6 +54,7 @@ class FU630_Laser:
     opPowerData = list(range(NUM_DATA_POINTS))
 
     targetOpPower = 0 # The optical power output (in mW) that is continuously optimized to
+    currentTTLVoltage = 0 # Value currently written to DAC
 
     def __init__(self): # Do on class initialization
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
@@ -65,14 +77,16 @@ class FU630_Laser:
         
         # Shuffle new data in at index 0
         self.opPowerData[0] = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
-        self.voltageData[0] = self.peripheral.GetTTLVoltage(self.ADS1115, self.TTL_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES)
+        self.voltageData[0] = self.currentTTLVoltage
 
     def JumpToOpPower(self, targetPower):
         # Convert target optical power to a voltage using a preset function
         voltage = convert.OpPowerToTTLVoltage(targetPower)
-
+        
         # Change TTL voltage to calculated target
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+
+        self.currentTTLVoltage = voltage # Update DAC voltage
 
         self.RecordData() # Record state of system
 
@@ -83,6 +97,8 @@ class FU630_Laser:
         voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
 
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+
+        self.currentTTLVoltage = voltage # Update DAC voltage
         
         self.RecordData() # Record state of system
 
@@ -97,6 +113,8 @@ class FU630_Laser:
 
         # Write new voltage to DAC TTL port
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+
+        self.currentTTLVoltage = voltage # Update DAC voltage
 
         self.RecordData() # Record state of system
     
