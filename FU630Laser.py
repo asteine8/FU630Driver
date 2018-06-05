@@ -5,7 +5,7 @@ This package allows one to interface with a FU-630SLD pump laser utilizing the A
 """
 
 import ConversionFunctions as convert
-import Devices
+import Devices.Peripherals
 
 import spidev
 import Adafruit_ADS1x15
