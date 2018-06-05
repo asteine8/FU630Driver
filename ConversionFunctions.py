@@ -12,7 +12,7 @@ def OpPowerToTTLVoltage(power):
     if power > 94.8:
         return 3 # Function does not model for optical power above 94.8 mW
     else:
-        return (1/798)*(2405 - math.sqrt(756625-7980*power)) # Apply modeling function
+        return 0.00626566*(481-0.447214*math.sqrt(151325-1596*power)) # Apply modeling function
 
 def PowerOverVoltageSlopeAtPower(power):
     # Returns the slope of power over voltage at a point defined by optical power
