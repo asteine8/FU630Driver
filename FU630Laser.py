@@ -88,10 +88,10 @@ class FU630_Laser:
 
         self.currentTTLVoltage = voltage # Update DAC voltage
 
-        self.RecordData() # Record state of system
-
     def JumpToInitialOptimization(self, targetPower):
         # Use linear approximation with the computed point slope on the optical power / voltage curve
+
+        self.RecordData() # Record state of system
 
         # Calculate voltage to write to DAC (index 0 of data storage always references last data point)
         voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
@@ -100,11 +100,12 @@ class FU630_Laser:
 
         self.currentTTLVoltage = voltage # Update DAC voltage
         
-        self.RecordData() # Record state of system
 
     def ApplyTwoPointOptimization(self, targetPower):
         # Uses previous two data points to optimize current system to a target optical power output utilizing linear regression methods
 
+        self.RecordData() # Record state of system
+        
         # Calculate the slope between the previous two points
         m = (self.opPowerData[1] - self.opPowerData[0]) / (self.voltageData[1] - self.voltageData[0])
 
@@ -116,6 +117,13 @@ class FU630_Laser:
 
         self.currentTTLVoltage = voltage # Update DAC voltage
 
+    def TurnOffLaser(self):
+        # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
+
+        self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, 0, self.DAC_GAIN, self.VREF_VOLTAGE) # Write 0 volts to the DAC
+
+        self.currentTTLVoltage = 0 # Update DAC voltage
+        
         self.RecordData() # Record state of system
     
     def ModifyOptimizationState(self):
@@ -132,6 +140,10 @@ class FU630_Laser:
 
     def OptimizeOpticalPower(self):
         # optimize to set optical power target
+
+        if self.targetOpPower == 0: # If target optical power is 0
+            self.TurnOffLaser() # Turn off Laser
+
         self.functionList[self.optimizationState](self.targetOpPower) # Call appropiate function with target optical power
         self.ModifyOptimizationState() # Change the optimization State
     
