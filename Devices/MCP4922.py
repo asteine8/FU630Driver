@@ -23,8 +23,8 @@ def WriteToDAC(device, channel, data, gain):
     bytesOut[0] |= ((int(data) >> 8) & 15) # Use 15 as 4 bit bitmask to get last 4 bits of data
 
     device.xfer2(bytesOut) # Write Bytes to DAC
-    print(bin(bytesOut[1]))
-    print(bin(bytesOut[0]))
+    # print(bin(bytesOut[1]))
+    # print(bin(bytesOut[0]))
 
 
 def DeactivateDAC(device, channel):

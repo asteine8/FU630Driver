@@ -79,6 +79,9 @@ class FU630_Laser:
         self.opPowerData[0] = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
         self.voltageData[0] = self.currentTTLVoltage
 
+        print('Indx0: V: ' + str(self.voltageData[0]) + ' | P: ' + str(self.opPowerData[0]))
+        print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
+
     def JumpToOpPower(self, targetPower):
         # Convert target optical power to a voltage using a preset function
         voltage = convert.OpPowerToTTLVoltage(targetPower)
