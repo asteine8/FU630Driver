@@ -96,9 +96,11 @@ class FU630_Laser:
         # Calculate voltage to write to DAC (index 0 of data storage always references last data point)
         voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
 
-        self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+        if voltage == self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
-        self.currentTTLVoltage = voltage # Update DAC voltage
+            self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
+
+            self.currentTTLVoltage = voltage # Update DAC voltage
         
 
     def ApplyTwoPointOptimization(self, targetPower):
@@ -106,16 +108,21 @@ class FU630_Laser:
 
         self.RecordData() # Record state of system
         
+        if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
+            return # terminate optimization cycle
+
         # Calculate the slope between the previous two points
         m = (self.opPowerData[1] - self.opPowerData[0]) / (self.voltageData[1] - self.voltageData[0])
 
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
 
-        # Write new voltage to DAC TTL port
-        self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+        if voltage == self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
-        self.currentTTLVoltage = voltage # Update DAC voltage
+            # Write new voltage to DAC TTL port
+            self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+
+            self.currentTTLVoltage = voltage # Update DAC voltage
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
