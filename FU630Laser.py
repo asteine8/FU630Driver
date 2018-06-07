@@ -83,6 +83,7 @@ class FU630_Laser:
         print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
 
     def JumpToOpPower(self, targetPower):
+
         # Convert target optical power to a voltage using a preset function
         voltage = convert.OpPowerToTTLVoltage(targetPower)
         
@@ -98,8 +99,8 @@ class FU630_Laser:
 
         # Calculate voltage to write to DAC (index 0 of data storage always references last data point)
         voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
-
-        if voltage == self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
+        
+        if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
             self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
 
