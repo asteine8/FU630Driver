@@ -114,6 +114,7 @@ class FU630_Laser:
         self.RecordData() # Record state of system
         
         if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
+            print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
 
         # Calculate the slope between the previous two points
@@ -122,12 +123,14 @@ class FU630_Laser:
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
 
-        if voltage == self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
+        if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
             # Write new voltage to DAC TTL port
             self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
             self.currentTTLVoltage = voltage # Update DAC voltage
+        else:
+            print("Attempted to write identical voltage to device, aborting optimization cycle")
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
