@@ -72,15 +72,17 @@ class FU630_Laser:
         return targetPower - self.currentPower # Return difference (negative if under power)
 
     def RecordData(self):
-        # Record Effects on system via photodiode and TTL voltage using ADC and push data up through lists
-        
-        for i in range(self.NUM_DATA_POINTS-1,0,-1): # Shift up elements one index
-            self.opPowerData[i] = self.opPowerData[i-1]
-            self.voltageData[i] = self.voltageData[i-1]
-        
-        # Shuffle new data in at index 0
+        # Record Effects on system via photodiode and TTL voltage using ADC and 
+
+        # Push new data in at index 0
         self.opPowerData[0] = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
         self.voltageData[0] = self.currentTTLVoltage
+
+    def ShuffleData(self):
+        # Push up data through the data records (Signifies that data has been accepted as used)
+        for i in range(self.NUM_DATA_POINTS-1,0,-1): # Shift up all elements one index
+            self.opPowerData[i] = self.opPowerData[i-1]
+            self.voltageData[i] = self.voltageData[i-1]
 
         print('Indx0: V: ' + str(self.voltageData[0]) + ' | P: ' + str(self.opPowerData[0]))
         print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
@@ -109,6 +111,8 @@ class FU630_Laser:
             self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
 
             self.currentTTLVoltage = voltage # Update DAC voltage
+
+        self.ShuffleData() # Lock data into system
         
 
     def ApplyTwoPointOptimization(self, targetPower):
@@ -138,8 +142,12 @@ class FU630_Laser:
             self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
             self.currentTTLVoltage = voltage # Update DAC voltage
+
+            self.ShuffleData() # Lock data into system
+
         else:
             print("Attempted to write identical voltage to device, aborting optimization cycle")
+            return
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
