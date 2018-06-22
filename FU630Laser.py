@@ -81,6 +81,7 @@ class FU630_Laser:
 
         print('Indx0: V: ' + str(self.voltageData[0]) + ' | P: ' + str(self.opPowerData[0]))
         print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
+        print('Indx2: V: ' + str(self.voltageData[2]) + ' | P: ' + str(self.opPowerData[2]))
 
     def JumpToOpPower(self, targetPower):
 
