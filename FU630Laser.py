@@ -133,6 +133,8 @@ class FU630_Laser:
 
         m = dy / dx # Calculate the slope between the previous two points
 
+        print(str(m))
+
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
 
