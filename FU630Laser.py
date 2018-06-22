@@ -125,6 +125,7 @@ class FU630_Laser:
 
         if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
             print("Change in calculated voltage is not significant, aborting optimization cycle")
+            return
 
         m = dy / dx # Calculate the slope between the previous two points
 
