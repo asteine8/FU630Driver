@@ -56,6 +56,9 @@ class FU630_Laser:
     targetOpPower = 0 # The optical power output (in mW) that is continuously optimized to
     currentTTLVoltage = 0 # Value currently written to DAC
 
+    # Calibration and precision constants
+    OPTICAL_POWER_SIG_FIGS = 3
+
     def __init__(self): # Do on class initialization
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
         self.MCP4922.max_speed_hz = self.DAC_SPI_SPEED # Set clk to max 100kHz (Can be higher...)
@@ -117,8 +120,13 @@ class FU630_Laser:
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
 
-        # Calculate the slope between the previous two points
-        m = (self.opPowerData[1] - self.opPowerData[0]) / (self.voltageData[1] - self.voltageData[0])
+        dx = self.voltageData[1] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
+        dy = self.opPowerData[1] - self.opPowerData[0] # Calculate delta y (change in optical power)
+
+        if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
+            print("Change in calculated voltage is not significant, aborting optimization cycle")
+
+        m = dy / dx # Calculate the slope between the previous two points
 
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
