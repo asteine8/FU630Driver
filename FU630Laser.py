@@ -124,7 +124,7 @@ class FU630_Laser:
         if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
-        elif round(self.opPowerData[0] == self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
+        elif round(self.opPowerData[0] - self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
             print("Optical power too close to target, aborting optimization cycle")
             return
 
