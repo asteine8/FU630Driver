@@ -58,7 +58,7 @@ class FU630_Laser:
 
     # Calibration and precision constants
     TTL_VOLTAGE_SIG_FIGS = 3
-    OPTICAL_POWER_SIG_FIGS = 3
+    OPTICAL_POWER_SIG_FIGS = 6
 
     def __init__(self): # Do on class initialization
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
