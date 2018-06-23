@@ -49,7 +49,7 @@ class FU630_Laser:
     MCP4922 = spidev.SpiDev() # Create a spi object for the DAC
     ADS1115 = Adafruit_ADS1x15.ADS1115(address=ADS1115_ADDRESS) # Create an I2C object for the ADC
 
-    NUM_DATA_POINTS = 3 # Number of data points to store (Only really need 2 but 3 are taken just in case)
+    NUM_DATA_POINTS = 20 # Number of data points to store (Only really need 2 but 3 are taken just in case)
     voltageData = list(range(NUM_DATA_POINTS)) # Store three data points (one extra for later use)
     opPowerData = list(range(NUM_DATA_POINTS))
 
@@ -124,12 +124,21 @@ class FU630_Laser:
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
 
-        dx = self.voltageData[1] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
-        dy = self.opPowerData[1] - self.opPowerData[0] # Calculate delta y (change in optical power)
+        for i in range(self.NUM_DATA_POINTS):
 
-        if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
-            print("Change in calculated voltage is not significant, aborting optimization cycle")
-            return
+            dx = self.voltageData[1] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
+            dy = self.opPowerData[1] - self.opPowerData[0] # Calculate delta y (change in optical power)
+
+            if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
+                print("Change in TTL voltage is not significant, using previous data point")
+            else:
+                break # Quit Loop
+            
+            if i == self.NUM_ADC_SAMPLES-1:
+                print("Voltage data insufficent, beginning new optimization cycle")
+                self.optimizationState = 1 # Jump to a new initial optimization
+                return # Quit Function
+
 
         m = dy / dx # Calculate the slope between the previous two points
 
