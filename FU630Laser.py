@@ -58,7 +58,7 @@ class FU630_Laser:
 
     # Calibration and precision constants
     TTL_VOLTAGE_SIG_FIGS = 3
-    OPTICAL_POWER_SIG_FIGS = 6
+    OPTICAL_POWER_SIG_FIGS = 3
 
     def __init__(self): # Do on class initialization
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
@@ -143,7 +143,10 @@ class FU630_Laser:
                 self.optimizationState = 1 # Jump to a new initial optimization
                 return # Quit Function
 
-
+        if round(dy, self.OPTICAL_POWER_SIG_FIGS) == 0:
+            print("Change in optical power too small, aborting optimization cycle")
+            return
+            
         m = dy / dx # Calculate the slope between the previous two points
 
         print(str(m))
