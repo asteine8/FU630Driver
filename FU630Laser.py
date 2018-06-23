@@ -124,10 +124,10 @@ class FU630_Laser:
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
 
-        for i in range(self.NUM_DATA_POINTS):
+        for i in range(1, self.NUM_DATA_POINTS, 1):
 
-            dx = self.voltageData[1] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
-            dy = self.opPowerData[1] - self.opPowerData[0] # Calculate delta y (change in optical power)
+            dx = self.voltageData[i] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
+            dy = self.opPowerData[i] - self.opPowerData[0] # Calculate delta y (change in optical power)
 
             if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
                 print("Change in TTL voltage is not significant, using previous data point")
