@@ -57,6 +57,7 @@ class FU630_Laser:
     currentTTLVoltage = 0 # Value currently written to DAC
 
     # Calibration and precision constants
+    TTL_VOLTAGE_SIG_FIGS = 3
     OPTICAL_POWER_SIG_FIGS = 3
 
     def __init__(self): # Do on class initialization
@@ -123,13 +124,16 @@ class FU630_Laser:
         if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
+        elif round(self.opPowerData[0] == self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
+            print("Optical power too close to target, aborting optimization cycle")
+            return
 
         for i in range(1, self.NUM_DATA_POINTS, 1):
 
             dx = self.voltageData[i] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
             dy = self.opPowerData[i] - self.opPowerData[0] # Calculate delta y (change in optical power)
 
-            if round(dx, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
+            if round(dx, self.TTL_VOLTAGE_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
                 print("Change in TTL voltage is not significant, using previous data point")
             else:
                 break # Quit Loop
