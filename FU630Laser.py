@@ -122,54 +122,27 @@ class FU630_Laser:
         # Uses previous two data points to optimize current system to a target optical power output utilizing linear regression methods
 
         self.RecordData() # Record state of system
-        
-        if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
-            print("Optical power at target, aborting optimization cycle")
-            return # terminate optimization cycle
-        elif round(self.opPowerData[0] - self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
-            print("Optical power too close to target, aborting optimization cycle")
-            return
+
+        sumPow = 0
+        sumVolt = 0
 
         for i in range(1, self.NUM_DATA_POINTS, 1):
+            sumPow += self.opPowerData[i]
+            sumVolt += self.voltageData[i]
 
-            dx = self.voltageData[i] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
-            dy = self.opPowerData[i] - self.opPowerData[0] # Calculate delta y (change in optical power)
+        
 
-            print("dx: " + str(dx) + " | dy: " + str(dy))
-
-            if round(dx, self.TTL_VOLTAGE_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
-                print("Change in TTL voltage is not significant, using previous data point")
-            else:
-                break # Quit Loop
-            
-            if i == self.NUM_ADC_SAMPLES-1:
-                print("Voltage data insufficent, beginning new optimization cycle")
-                self.optimizationState = 1 # Jump to a new initial optimization
-                return # Quit Function
-
-        if round(dy, self.OPTICAL_POWER_SIG_FIGS) == 0:
-            print("Change in optical power too small, aborting optimization cycle")
-            return
-
-        m = dy / dx # Calculate the slope between the previous two points
-
-        print(str(m))
+        m = dy / dx # Calculate the slope between the most recent data and the average of all previous points
 
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
 
-        if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
+        # Write new voltage to DAC TTL port
+        self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
-            # Write new voltage to DAC TTL port
-            self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
+        self.currentTTLVoltage = voltage # Update DAC voltage
 
-            self.currentTTLVoltage = voltage # Update DAC voltage
-
-            self.ShuffleData() # Lock data into system
-
-        else:
-            print("Attempted to write identical voltage to device, aborting optimization cycle")
-            return
+        self.ShuffleData() # Lock data into system
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
