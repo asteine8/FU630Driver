@@ -52,6 +52,7 @@ class FU630_Laser:
     NUM_DATA_POINTS = 20 # Number of data points to store (Only really need 2 but 3 are taken just in case)
     voltageData = list(range(NUM_DATA_POINTS)) # Store three data points (one extra for later use)
     opPowerData = list(range(NUM_DATA_POINTS))
+    numValidDataPoints = 0
 
     targetOpPower = 0 # The optical power output (in mW) that is continuously optimized to
     currentTTLVoltage = 0 # Value currently written to DAC
@@ -91,6 +92,8 @@ class FU630_Laser:
         print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
         print('Indx2: V: ' + str(self.voltageData[2]) + ' | P: ' + str(self.opPowerData[2]))
 
+        self.numValidDataPoints += 1 # Valid data has been shuffled in
+
     def JumpToOpPower(self, targetPower):
 
         # Convert target optical power to a voltage using a preset function
@@ -100,6 +103,8 @@ class FU630_Laser:
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
         self.currentTTLVoltage = voltage # Update DAC voltage
+        
+        self.numValidDataPoints = 0 # Reset number of valid data points
 
     def JumpToInitialOptimization(self, targetPower):
         # Use linear approximation with the computed point slope on the optical power / voltage curve
@@ -126,9 +131,14 @@ class FU630_Laser:
         sumPow = 0
         sumVolt = 0
 
-        for i in range(1, self.NUM_DATA_POINTS, 1):
-            sumPow += self.opPowerData[i]
-            sumVolt += self.voltageData[i]
+        if self.numValidDataPoints < self.NUM_DATA_POINTS-1:
+            for i in range(1, self.numValidDataPoints + 1, 1):
+                sumPow += self.opPowerData[i]
+                sumVolt += self.voltageData[i]
+        else:
+            for i in range(1, self.NUM_DATA_POINTS, 1):
+                sumPow += self.opPowerData[i]
+                sumVolt += self.voltageData[i]
 
         dy = self.opPowerData[0] - sumPow/(self.NUM_DATA_POINTS-1) # Calculate difference between averaged recorded optical power data and most recent data
         dx = self.voltageData[0] - sumVolt/(self.NUM_DATA_POINTS-1) # Calculate difference between averaged recorded current limiter data and most recent data
@@ -138,7 +148,7 @@ class FU630_Laser:
         print("dy: " + str(dy) + " | dx: " + str(dx) + " | m: " + str(m))
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
-        
+
         # Write new voltage to DAC TTL port
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
