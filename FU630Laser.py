@@ -34,7 +34,7 @@ class FU630_Laser:
     #  8 = +/- 0.512 V
     # 16 = +/- 0.256 V
     ADC_GAIN = 4 # FSR = +- 1.024 Volts
-    NUM_ADC_SAMPLES = 10 # Number of samples to average (10 is good enough)
+    NUM_ADC_SAMPLES = 20 # Number of samples to average (10 is good enough)
 
     # ADC Differential Channel Settings (Recommended to use settings 1 - 3 to allow for multiple devices per ADC)
     # 0 = A0 - A1
@@ -130,19 +130,23 @@ class FU630_Laser:
             sumPow += self.opPowerData[i]
             sumVolt += self.voltageData[i]
 
-        
+        dy = self.opPowerData[0] - sumPow/(self.NUM_DATA_POINTS-1) # Calculate difference between averaged recorded optical power data and most recent data
+        dx = self.voltageData[0] - sumVolt/(self.NUM_DATA_POINTS-1) # Calculate difference between averaged recorded current limiter data and most recent data
 
         m = dy / dx # Calculate the slope between the most recent data and the average of all previous points
 
+        print("dy: " + str(dy) + " | dx: " + str(dx) + " | m: " + str(m))
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
-
+        
         # Write new voltage to DAC TTL port
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
         self.currentTTLVoltage = voltage # Update DAC voltage
 
         self.ShuffleData() # Lock data into system
+
+        print("Optimization cycle ended")
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
