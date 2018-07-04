@@ -56,6 +56,18 @@ class FU630_Laser:
     targetOpPower = 0 # The optical power output (in mW) that is continuously optimized to
     currentTTLVoltage = 0 # Value currently written to DAC
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # Thresholds and Step Size for gradient range
+    # All measurments are in volts
+
+    MaxCushioningThreshold = 0.01 # Voltage from target where maximum step size is availible
+    MinCushioningThreshold = 0.50 # Voltage from target where minimum step size is availible
+
+    MaxStepSize = 0.05 # Maximum current limiter voltage step size
+    MinStepSize = 0 # Minimum current limiter voltage step size (Set to 0 to not optimize towards target inside minimum threshold)
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     # Calibration and precision constants
     TTL_VOLTAGE_SIG_FIGS = 3
     OPTICAL_POWER_SIG_FIGS = 3
@@ -64,32 +76,27 @@ class FU630_Laser:
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
         self.MCP4922.max_speed_hz = self.DAC_SPI_SPEED # Set clk to max 100kHz (Can be higher...)
         self.optimizationState = 0
-        self.functionList = [self.JumpToOpPower, self.JumpToInitialOptimization, self.ApplyTwoPointOptimization]
+        self.functionList = [self.JumpToOpPower, self.ApplyGradientOptimization] # Function to call in order
 
     def GetDeltaOpticalPower(self, targetPower):
+        # Gets current difference between current and target optical power and shuffles in new data to stack
+
         # Get current optical power
         self.currentPower = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
 
-        return targetPower - self.currentPower # Return difference (negative if under power)
-
-    def RecordData(self):
-        # Record Effects on system via photodiode and TTL voltage using ADC and 
-
-        # Push new data in at index 0
-        self.opPowerData[0] = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
-        self.voltageData[0] = self.currentTTLVoltage
-
-
-
-    def ShuffleData(self):
-        # Push up data through the data records (Signifies that data has been accepted as used)
-        for i in range(self.NUM_DATA_POINTS-1,0,-1): # Shift up all elements one index
-            self.opPowerData[i] = self.opPowerData[i-1]
+        # Shuffle in data
+        for i in range(1, self.NUM_DATA_POINTS-1, -1):
             self.voltageData[i] = self.voltageData[i-1]
+            self.opPowerData[i] = self.opPowerData[i-1]
+        
+        # Record Current Optical Power and Voltage
+        self.voltageData[0] = self.currentTTLVoltage
+        self.opPowerData[0] = self.currentPower
 
-        print('Indx0: V: ' + str(self.voltageData[0]) + ' | P: ' + str(self.opPowerData[0]))
-        print('Indx1: V: ' + str(self.voltageData[1]) + ' | P: ' + str(self.opPowerData[1]))
-        print('Indx2: V: ' + str(self.voltageData[2]) + ' | P: ' + str(self.opPowerData[2]))
+        print("Current Optical Power: " + str(self.opPowerData[0] + " mW")
+        print("Current Voltage to Current Limiter: " + str(self.voltageData[0] + " Volts")
+
+        return targetPower - self.currentPower # Return difference (negative if under power)
 
     def JumpToOpPower(self, targetPower):
 
@@ -101,75 +108,50 @@ class FU630_Laser:
 
         self.currentTTLVoltage = voltage # Update DAC voltage
 
-    def JumpToInitialOptimization(self, targetPower):
-        # Use linear approximation with the computed point slope on the optical power / voltage curve
+    def ModulateVoltageByStepAndDirection(self, stepSize, dir):
+        # Change Voltage from DAC via step and direction
 
-        self.RecordData() # Record state of system
+        voltage = self.voltageData[0] + (stepSize * dir) # Calculate new voltage
 
-        # Calculate voltage to write to DAC (index 0 of data storage always references last data point)
-        voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
-        
-        if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
+        self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
 
-            self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
+        self.currentTTLVoltage = voltage #  Change current voltage to actual current voltage
 
-            self.currentTTLVoltage = voltage # Update DAC voltage
+        print("Step size: " + str(stepSize) + " | dir: " + str(dir))
 
-        self.ShuffleData() # Lock data into system
-        
+    def ApplyGradientOptimization(self, targetPower):
+        # Apply a gradient mediated optimization within set thresholds
 
-    def ApplyTwoPointOptimization(self, targetPower):
-        # Uses previous two data points to optimize current system to a target optical power output utilizing linear regression methods
-
-        self.RecordData() # Record state of system
-        
-        if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
-            print("Optical power at target, aborting optimization cycle")
-            return # terminate optimization cycle
-        elif round(self.opPowerData[0] - self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
-            print("Optical power too close to target, aborting optimization cycle")
+        if targetPower == 0: # Check for laser off
+            self.TurnOffLaser() # Turn off the laser
             return
 
-        for i in range(1, self.NUM_DATA_POINTS, 1):
+        deltaVoltage = self.GetDeltaOpticalPower(targetPower) # Also records data into data records
 
-            dx = self.voltageData[i] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
-            dy = self.opPowerData[i] - self.opPowerData[0] # Calculate delta y (change in optical power)
-
-            print("dx: " + str(dx) + " | dy: " + str(dy))
-
-            if round(dx, self.TTL_VOLTAGE_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
-                print("Change in TTL voltage is not significant, using previous data point")
-            else:
-                break # Quit Loop
-            
-            if i == self.NUM_ADC_SAMPLES-1:
-                print("Voltage data insufficent, beginning new optimization cycle")
-                self.optimizationState = 1 # Jump to a new initial optimization
-                return # Quit Function
-
-        if round(dy, self.OPTICAL_POWER_SIG_FIGS) == 0:
-            print("Change in optical power too small, aborting optimization cycle")
-            return
-
-        m = dy / dx # Calculate the slope between the previous two points
-
-        print(str(m))
-
-        # Calculate new target voltage
-        voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
-
-        if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
-
-            # Write new voltage to DAC TTL port
-            self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
-
-            self.currentTTLVoltage = voltage # Update DAC voltage
-
-            self.ShuffleData() # Lock data into system
-
+        # Get direction to target voltage
+        if deltaVoltage < 0:
+            dir = -1
         else:
-            print("Attempted to write identical voltage to device, aborting optimization cycle")
-            return
+            dir = 1
+
+        if abs(deltaVoltage) >= self.MaxCushioningThreshold: # Outside gradient so use max step size
+
+            self.ModulateVoltageByStepAndDirection(self.MaxStepSize, dir)
+
+        elif abs(deltaVoltage) > self.MinCushioningThreshold: # In gradient range
+
+            gradientModulatedPercentage = (abs(deltaVoltage) - self.MinCushioningThreshold) / abs(self.MaxCushioningThreshold - self.MinCushioningThreshold)
+
+            print("% Step Size: " + str(gradientModulatedPercentage) + "%")
+
+            stepSize = self.MaxStepSize * gradientModulatedPercentage
+
+            self.ModulateVoltageByStepAndDirection(stepSize, dir)
+            
+        else: # Inside Minimum step size threshold
+
+            self.ModulateVoltageByStepAndDirection(self.MinStepSize, dir)
+            
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
@@ -177,8 +159,6 @@ class FU630_Laser:
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, 0, self.DAC_GAIN, self.VREF_VOLTAGE) # Write 0 volts to the DAC
 
         self.currentTTLVoltage = 0 # Update DAC voltage
-        
-        self.RecordData() # Record state of system
     
     def ModifyOptimizationState(self):
         if self.optimizationState < len(self.functionList) - 1:
@@ -200,5 +180,6 @@ class FU630_Laser:
 
         self.functionList[self.optimizationState](self.targetOpPower) # Call appropiate function with target optical power
         self.ModifyOptimizationState() # Change the optimization State
+        
     
 
