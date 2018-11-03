@@ -73,7 +73,7 @@ class FU630_Laser:
         return targetPower - self.currentPower # Return difference (negative if under power)
 
     def RecordData(self):
-        # Record Effects on system via photodiode and TTL voltage using ADC and 
+        # Record Effects on system via photodiode and TTL voltage using ADC and
 
         # Push new data in at index 0
         self.opPowerData[0] = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
@@ -95,7 +95,7 @@ class FU630_Laser:
 
         # Convert target optical power to a voltage using a preset function
         voltage = convert.OpPowerToTTLVoltage(targetPower)
-        
+
         # Change TTL voltage to calculated target
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
@@ -108,7 +108,7 @@ class FU630_Laser:
 
         # Calculate voltage to write to DAC (index 0 of data storage always references last data point)
         voltage = (targetPower - self.opPowerData[0]) / convert.PowerOverVoltageSlopeAtPower(self.opPowerData[0]) + self.voltageData[0]
-        
+
         if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
             self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
@@ -116,13 +116,13 @@ class FU630_Laser:
             self.currentTTLVoltage = voltage # Update DAC voltage
 
         self.ShuffleData() # Lock data into system
-        
+
 
     def ApplyTwoPointOptimization(self, targetPower):
         # Uses previous two data points to optimize current system to a target optical power output utilizing linear regression methods
 
         self.RecordData() # Record state of system
-        
+
         if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
             print("Optical power at target, aborting optimization cycle")
             return # terminate optimization cycle
@@ -141,7 +141,7 @@ class FU630_Laser:
                 print("Change in TTL voltage is not significant, using previous data point")
             else:
                 break # Quit Loop
-            
+
             if i == self.NUM_ADC_SAMPLES-1:
                 print("Voltage data insufficent, beginning new optimization cycle")
                 self.optimizationState = 1 # Jump to a new initial optimization
@@ -169,7 +169,8 @@ class FU630_Laser:
 
         else:
             print("Attempted to write identical voltage to device, aborting optimization cycle")
-            return
+
+        self.ShuffleData() # Lock data into system
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
@@ -177,9 +178,9 @@ class FU630_Laser:
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, 0, self.DAC_GAIN, self.VREF_VOLTAGE) # Write 0 volts to the DAC
 
         self.currentTTLVoltage = 0 # Update DAC voltage
-        
+
         self.RecordData() # Record state of system
-    
+
     def ModifyOptimizationState(self):
         if self.optimizationState < len(self.functionList) - 1:
             self.optimizationState += 1
@@ -200,5 +201,3 @@ class FU630_Laser:
 
         self.functionList[self.optimizationState](self.targetOpPower) # Call appropiate function with target optical power
         self.ModifyOptimizationState() # Change the optimization State
-    
-
