@@ -93,8 +93,8 @@ class FU630_Laser:
         self.voltageData[0] = self.currentTTLVoltage
         self.opPowerData[0] = self.currentPower
 
-        print("Current Optical Power: " + str(self.opPowerData[0] + " mW")
-        print("Current Voltage to Current Limiter: " + str(self.voltageData[0] + " Volts")
+        print("Current Optical Power: " + str(self.opPowerData[0]) + " mW")
+        print("Current Voltage to Current Limiter: " + str(self.voltageData[0]) + " Volts")
 
         return targetPower - self.currentPower # Return difference (negative if under power)
 
@@ -151,7 +151,7 @@ class FU630_Laser:
         else: # Inside Minimum step size threshold
 
             self.ModulateVoltageByStepAndDirection(self.MinStepSize, dir)
-            
+
 
     def TurnOffLaser(self):
         # Sets TTL voltage to 0 to completely shutdown the current source and consequently the attached laser
