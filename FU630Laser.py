@@ -34,7 +34,7 @@ class FU630_Laser:
     #  4 = +/- 1.024 V
     #  8 = +/- 0.512 V
     # 16 = +/- 0.256 V
-    ADC_GAIN = 2 # FSR = +- 1.024 Volts
+    ADC_GAIN = 1 # FSR = +- 1.024 Volts
     NUM_ADC_SAMPLES = 10 # Number of samples to average (10 is good enough)
 
     # ADC Differential Channel Settings (Recommended to use settings 1 - 3 to allow for multiple devices per ADC)
