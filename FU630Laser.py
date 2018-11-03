@@ -164,7 +164,7 @@ class FU630_Laser:
 
         # Ensure voltage is in bounds
 
-        if (volage > DAC_MAX_VOLTAGE):
+        if (voltage > DAC_MAX_VOLTAGE):
             voltage = DAC_MAX_VOLTAGE
         elif (voltage < 0):
             voltage = 0
