@@ -123,9 +123,11 @@ class FU630_Laser:
 
         if self.opPowerData[0] == self.targetOpPower: # Check if optical power is already at target
             print("Optical power at target, aborting optimization cycle")
+            self.ShuffleData()
             return # terminate optimization cycle
         elif round(self.opPowerData[0] - self.targetOpPower, self.OPTICAL_POWER_SIG_FIGS) == 0: # Check to make sure that the optical power isn't too close to target either
             print("Optical power too close to target, aborting optimization cycle")
+            self.ShuffleData()
             return
 
         for i in range(1, self.NUM_DATA_POINTS, 1):
@@ -137,16 +139,19 @@ class FU630_Laser:
 
             if round(dx, self.TTL_VOLTAGE_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
                 print("Change in TTL voltage is not significant, using previous data point")
+                self.ShuffleData()
             else:
                 break # Quit Loop
 
             if i == self.NUM_ADC_SAMPLES-1:
                 print("Voltage data insufficent, beginning new optimization cycle")
                 self.optimizationState = 1 # Jump to a new initial optimization
+                self.ShuffleData()
                 return # Quit Function
 
         if round(dy, self.OPTICAL_POWER_SIG_FIGS) == 0:
-            print("Change in optical power too small, aborting optimization cycle")
+            print("Change in optical power too small, aborting optimization cycle
+            self.ShuffleData()
             return
 
         m = dy / dx # Calculate the slope between the previous two points
