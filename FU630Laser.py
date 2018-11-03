@@ -20,6 +20,7 @@ class FU630_Laser:
     DAC_CE = 0 # CE pin for DAC (Chip Enable)
     DAC_SPI_SPEED = 100000 # Clock speed for DAC spi comms (100kHz is good)
     DAC_GAIN = 1 # 1x gain
+    DAC_MAX_VOLTAGE = 3.3;
     VREF_VOLTAGE = 3.3 # Connect VREF to +3.3 volts on the DAC
 
     TTL_DAC_CHANNEL = 0 # 0 = channel A, 1 = channel B
@@ -160,6 +161,13 @@ class FU630_Laser:
 
         # Calculate new target voltage
         voltage = (targetPower - self.opPowerData[0]) / m + self.voltageData[0]
+
+        # Ensure voltage is in bounds
+
+        if (volage > DAC_MAX_VOLTAGE):
+            voltage = DAC_MAX_VOLTAGE
+        elif (voltage < 0):
+            voltage = 0
 
         if voltage != self.voltageData[0]: # Check if calculated voltage is a duplicate of the previous data set
 
