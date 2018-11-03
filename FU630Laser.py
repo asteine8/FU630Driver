@@ -20,7 +20,7 @@ class FU630_Laser:
     DAC_CE = 0 # CE pin for DAC (Chip Enable)
     DAC_SPI_SPEED = 100000 # Clock speed for DAC spi comms (100kHz is good)
     DAC_GAIN = 1 # 1x gain
-    MAX_DAC_VOLTAGE = 3.3 # Max voltage output for DAC
+    MAX_DAC_VOLTAGE = 3.29 # Max voltage output for DAC
     VREF_VOLTAGE = 3.3 # Connect VREF to +3.3 volts on the DAC
 
     TTL_DAC_CHANNEL = 0 # 0 = channel A, 1 = channel B
