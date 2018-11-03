@@ -135,7 +135,7 @@ class FU630_Laser:
             dx = self.voltageData[i] - self.voltageData[0] # Calculate delta x (change in TTL voltage)
             dy = self.opPowerData[i] - self.opPowerData[0] # Calculate delta y (change in optical power)
 
-            print("dx: " + str(dx) + " | dy: ")
+            print("dx: " + str(dx) + " | dy: " + str(dy))
 
             if round(dx, self.TTL_VOLTAGE_SIG_FIGS) == 0: # Check to prevent div by 0 errors resulting from divison rounding
                 print("Change in TTL voltage is not significant, using previous data point")
