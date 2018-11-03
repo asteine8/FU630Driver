@@ -88,7 +88,7 @@ class FU630_Laser:
         for i in range(1, self.NUM_DATA_POINTS-1, -1):
             self.voltageData[i] = self.voltageData[i-1]
             self.opPowerData[i] = self.opPowerData[i-1]
-        
+
         # Record Current Optical Power and Voltage
         self.voltageData[0] = self.currentTTLVoltage
         self.opPowerData[0] = self.currentPower
@@ -102,7 +102,7 @@ class FU630_Laser:
 
         # Convert target optical power to a voltage using a preset function
         voltage = convert.OpPowerToTTLVoltage(targetPower)
-        
+
         # Change TTL voltage to calculated target
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE)
 
@@ -147,7 +147,7 @@ class FU630_Laser:
             stepSize = self.MaxStepSize * gradientModulatedPercentage
 
             self.ModulateVoltageByStepAndDirection(stepSize, dir)
-            
+
         else: # Inside Minimum step size threshold
 
             self.ModulateVoltageByStepAndDirection(self.MinStepSize, dir)
@@ -159,7 +159,7 @@ class FU630_Laser:
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, 0, self.DAC_GAIN, self.VREF_VOLTAGE) # Write 0 volts to the DAC
 
         self.currentTTLVoltage = 0 # Update DAC voltage
-    
+
     def ModifyOptimizationState(self):
         if self.optimizationState < len(self.functionList) - 1:
             self.optimizationState += 1
@@ -180,6 +180,3 @@ class FU630_Laser:
 
         self.functionList[self.optimizationState](self.targetOpPower) # Call appropiate function with target optical power
         self.ModifyOptimizationState() # Change the optimization State
-        
-    
-
