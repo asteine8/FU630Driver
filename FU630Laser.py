@@ -44,6 +44,7 @@ class FU630_Laser:
     # 3 = A2 - A3
     PHOTODIODE_ADC_CHANNEL = 3 # Standard channel (Differential)
     PHOTODIODE_SHUNT_RESISTANCE = 980 # Should be ~1k, value shoud be experimentally determined in ohms
+    ADC_BASELINE_VOLTAGE = 0.747 # Voltage observed on ADC when optical power is 0
 
     peripheral = Devices.Peripherals # Create an object to reference the Peripherals package from
 
@@ -77,13 +78,13 @@ class FU630_Laser:
         self.MCP4922.open(self.DAC_PORT, self.DAC_CE) # Open spi port 0, device (CE) 0 (Connect to pin 24)
         self.MCP4922.max_speed_hz = self.DAC_SPI_SPEED # Set clk to max 100kHz (Can be higher...)
         self.optimizationState = 0
-        self.functionList = [self.JumpToOpPower, self.ApplyGradientOptimization] # Function to call in order
+        self.functionList = [self.RecordBaselineVoltage, self.JumpToOpPower, self.ApplyGradientOptimization] # Function to call in order
 
     def GetDeltaOpticalPower(self, targetPower):
         # Gets current difference between current and target optical power and shuffles in new data to stack
 
         # Get current optical power
-        self.currentPower = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.PHOTODIODE_SHUNT_RESISTANCE)
+        self.currentPower = convert.PhotodiodeVoltageToOpPower(self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES), self.ADC_BASELINE_VOLTAGE, self.PHOTODIODE_SHUNT_RESISTANCE)
 
         # Shuffle in data
         for i in range(1, self.NUM_DATA_POINTS-1, -1):
@@ -98,6 +99,13 @@ class FU630_Laser:
         print("Current Voltage to Current Limiter: " + str(self.voltageData[0]) + " Volts")
 
         return targetPower - self.currentPower # Return difference (negative if under power)
+
+    def RecordBaselineVoltage(self, targetPower):
+        pass
+        this.TurnOffLaser();
+        time.sleep(1);
+        this.ADC_BASELINE_VOLTAGE = self.peripheral.GetPhotodiodeVoltage(self.ADS1115, self.PHOTODIODE_ADC_CHANNEL, self.ADC_GAIN, self.NUM_ADC_SAMPLES)
+
 
     def JumpToOpPower(self, targetPower):
 

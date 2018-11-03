@@ -19,12 +19,12 @@ def PowerOverVoltageSlopeAtPower(power):
     voltage = OpPowerToTTLVoltage(power)
     return 481 - 159.6 *  voltage
 
-def PhotodiodeVoltageToCurrent(voltage, shuntResistance):
+def PhotodiodeVoltageToCurrent(voltage, baselineVoltage, shuntResistance):
     # Function to convert a measured voltage (volts) to current (mA) given the shunt resitance
-    return 1000 * voltage / shuntResistance
+    return 1000 * (voltage + baselineVoltage) / shuntResistance
 
-def PhotodiodeVoltageToOpPower(voltage, shuntResistance):
+def PhotodiodeVoltageToOpPower(voltage, baselineVoltage, shuntResistance):
     # Function to convert measured photodiode voltage (volts) to optical power (mW)
-    current = PhotodiodeVoltageToCurrent(abs(voltage), shuntResistance)
+    current = PhotodiodeVoltageToCurrent(voltage, baselineVoltage, shuntResistance)
     # return 117 * current + 0.275 #Laser 1
     return 42.769 * current + 0.149 #Laser 2
