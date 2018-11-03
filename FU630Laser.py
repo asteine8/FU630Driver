@@ -150,7 +150,7 @@ class FU630_Laser:
                 return # Quit Function
 
         if round(dy, self.OPTICAL_POWER_SIG_FIGS) == 0:
-            print("Change in optical power too small, aborting optimization cycle
+            print("Change in optical power too small, aborting optimization cycle")
             self.ShuffleData()
             return
 
