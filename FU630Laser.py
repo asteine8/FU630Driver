@@ -145,7 +145,7 @@ class FU630_Laser:
 
             if i == self.NUM_ADC_SAMPLES-1:
                 print("Voltage data insufficent, beginning new optimization cycle")
-                self.optimizationState = 1 # Jump to a new initial optimization
+                self.optimizationState = 0 # Jump to a new initial optimization
                 self.ShuffleData()
                 return # Quit Function
 
