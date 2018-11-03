@@ -20,6 +20,7 @@ class FU630_Laser:
     DAC_CE = 0 # CE pin for DAC (Chip Enable)
     DAC_SPI_SPEED = 100000 # Clock speed for DAC spi comms (100kHz is good)
     DAC_GAIN = 1 # 1x gain
+    MAX_DAC_VOLTAGE = 3.3 # Max voltage output for DAC
     VREF_VOLTAGE = 3.3 # Connect VREF to +3.3 volts on the DAC
 
     TTL_DAC_CHANNEL = 0 # 0 = channel A, 1 = channel B
@@ -112,6 +113,11 @@ class FU630_Laser:
         # Change Voltage from DAC via step and direction
 
         voltage = self.voltageData[0] + (stepSize * dir) # Calculate new voltage
+
+        if (voltage > self.MAX_DAC_VOLTAGE):
+            voltage = self.MAX_DAC_VOLTAGE
+        elif (voltage < 0):
+            voltage = 0
 
         self.peripheral.WriteToDAC(self.MCP4922, self.TTL_DAC_CHANNEL, voltage, self.DAC_GAIN, self.VREF_VOLTAGE) # Write voltage to DAC
 
